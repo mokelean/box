@@ -3,36 +3,43 @@ package com.example.dispositivotracker;
 import com.google.gson.annotations.SerializedName;
 
 public class DeviceInfo {
+
     @SerializedName("brand")
-    public String brand;
+    private String brand;
 
     @SerializedName("model")
-    public String model;
+    private String model;
 
     @SerializedName("manufacturer")
-    public String manufacturer;
+    private String manufacturer;
 
     @SerializedName("android_version")
-    public String androidVersion;
+    private String androidVersion;
 
     @SerializedName("api_level")
-    public int apiLevel;
+    private int apiLevel;
 
     @SerializedName("device_id")
-    public String deviceId;
+    private String deviceId;
 
     @SerializedName("ip_address")
-    public String ipAddress;
+    private String ipAddress;
 
     @SerializedName("battery_level")
-    public int batteryLevel;
+    private int batteryLevel;
 
     @SerializedName("network_type")
-    public String networkType;
+    private String networkType;
+
+    @SerializedName("sim_operator")
+    private String simOperator;
+
+    @SerializedName("phone_number")
+    private String phoneNumber;
 
     public DeviceInfo(String brand, String model, String manufacturer, String androidVersion,
-                      int apiLevel, String deviceId, String ipAddress,
-                      int batteryLevel, String networkType) {
+                      int apiLevel, String deviceId, String ipAddress, int batteryLevel,
+                      String networkType, String simOperator, String phoneNumber) {
         this.brand = brand;
         this.model = model;
         this.manufacturer = manufacturer;
@@ -42,5 +49,7 @@ public class DeviceInfo {
         this.ipAddress = ipAddress;
         this.batteryLevel = batteryLevel;
         this.networkType = networkType;
+        this.simOperator = simOperator;
+        this.phoneNumber = phoneNumber;
     }
 }
