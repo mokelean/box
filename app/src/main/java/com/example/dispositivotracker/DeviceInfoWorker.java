@@ -5,19 +5,19 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
+import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Enumeration;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -36,8 +36,10 @@ public class DeviceInfoWorker extends Worker {
     public Result doWork() {
         Context context = getApplicationContext();
 
-        String ip = getLocalIpAddress();
+        // ✅ Obtener IP solo si está en Wi-Fi
+        String ip = getWifiIpAddress(context);
 
+        // 🔋 Nivel de batería
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         Intent batteryStatus = context.registerReceiver(null, ifilter);
         int batteryLevel = -1;
@@ -47,6 +49,7 @@ public class DeviceInfoWorker extends Worker {
 
         boolean isWifi = isConnectedViaWifi(context);
 
+        // 📦 Armar objeto con info del dispositivo
         DeviceInfo info = new DeviceInfo(
                 Build.BRAND,
                 Build.MODEL,
@@ -61,17 +64,23 @@ public class DeviceInfoWorker extends Worker {
 
         try {
             Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl("http://10.0.2.2:5000") // Cambiar si estás en un dispositivo real
+                    .baseUrl("http://192.168.23.151:5000") // Cambiar si usás otro host
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
 
             ApiService apiService = retrofit.create(ApiService.class);
-
             Call<ResponseBody> call = apiService.sendDeviceInfo(info);
             Response<ResponseBody> response = call.execute();
 
             if (response.isSuccessful()) {
                 Log.d("WORKER", "✅ Info enviada correctamente");
+
+                // 🔁 Reprogramar en 3 minutos
+                OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(DeviceInfoWorker.class)
+                        .setInitialDelay(3, TimeUnit.MINUTES)
+                        .build();
+                WorkManager.getInstance(getApplicationContext()).enqueue(request);
+
                 return Result.success();
             } else {
                 Log.e("WORKER", "❌ Error HTTP: " + response.code());
@@ -83,19 +92,24 @@ public class DeviceInfoWorker extends Worker {
         }
     }
 
-    private String getLocalIpAddress() {
+    // ✅ Obtener IP solo si está conectado por Wi-Fi
+    private String getWifiIpAddress(Context context) {
         try {
-            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
-                NetworkInterface intf = en.nextElement();
-                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
-                    InetAddress inetAddress = enumIpAddr.nextElement();
-                    if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet4Address) {
-                        return inetAddress.getHostAddress();
-                    }
-                }
+            ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkCapabilities capabilities = cm.getNetworkCapabilities(cm.getActiveNetwork());
+            if (capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                int ipInt = wifiManager.getConnectionInfo().getIpAddress();
+                return String.format(
+                        "%d.%d.%d.%d",
+                        (ipInt & 0xff),
+                        (ipInt >> 8 & 0xff),
+                        (ipInt >> 16 & 0xff),
+                        (ipInt >> 24 & 0xff)
+                );
             }
-        } catch (Exception ex) {
-            Log.e("WORKER", "Error IP: " + ex.getMessage());
+        } catch (Exception e) {
+            Log.e("WORKER", "Error al obtener IP Wi-Fi: " + e.getMessage(), e);
         }
         return "0.0.0.0";
     }

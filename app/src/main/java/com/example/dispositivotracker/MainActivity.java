@@ -1,9 +1,8 @@
 package com.example.dispositivotracker;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
-import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
 import android.os.Bundle;
@@ -32,24 +31,26 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Programar tarea periódica cada 15 minutos
-        PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
-                DeviceInfoWorker.class,
-                15, TimeUnit.MINUTES
-        ).build();
+        // 🔁 Programar ejecución automática cada 3 minutos (modo prueba)
+        programarTareaCada3Minutos();
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-                "DeviceInfoWork",
-                ExistingPeriodicWorkPolicy.KEEP,
-                workRequest
-        );
-
-        Log.d("WORKER", "Tarea periódica programada");
+        Log.d("WORKER", "⏱️ Tarea programada cada 3 minutos (modo prueba)");
     }
 
-    // Ejecutar el worker una sola vez manualmente al tocar el botón
     private void ejecutarTareaManual() {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(DeviceInfoWorker.class).build();
         WorkManager.getInstance(this).enqueue(request);
+    }
+
+    private void programarTareaCada3Minutos() {
+        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(DeviceInfoWorker.class)
+                .setInitialDelay(3, TimeUnit.MINUTES)
+                .build();
+
+        WorkManager.getInstance(this).enqueueUniqueWork(
+                "DeviceInfoTestWork",
+                ExistingWorkPolicy.REPLACE,
+                request
+        );
     }
 }
