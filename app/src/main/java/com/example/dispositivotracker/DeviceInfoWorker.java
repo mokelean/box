@@ -35,25 +35,25 @@ public class DeviceInfoWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
+        Log.d("WORKER", "📦 Ejecutando DeviceInfoWorker");
+
         Context context = getApplicationContext();
         SharedPreferences prefs = context.getSharedPreferences("tracker_prefs", Context.MODE_PRIVATE);
 
         String ip = getWifiIpAddress(context);
-
-        int batteryLevel = -1;
-        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        Intent batteryStatus = context.registerReceiver(null, ifilter);
-        if (batteryStatus != null) {
-            batteryLevel = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        }
-
+        int batteryLevel = getBatteryLevel(context);
         boolean isWifi = isConnectedViaWifi(context);
 
-        // Obtener operador y número de teléfono
-        String simOperator = "Desconocido";
         String phoneNumber = prefs.getString("numero_linea", "");
-
         if (phoneNumber.isEmpty()) {
+            phoneNumber = prefs.getString("confirmed_phone", "");
+            if (!phoneNumber.isEmpty()) {
+                prefs.edit().putString("numero_linea", phoneNumber).apply();
+            }
+        }
+
+        String simOperator = !phoneNumber.isEmpty() ? "Manual" : "Desconocido";
+        if (simOperator.equals("Desconocido")) {
             try {
                 TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
                 if (tm != null) {
@@ -63,11 +63,9 @@ public class DeviceInfoWorker extends Worker {
                     }
                 }
             } catch (SecurityException e) {
-                Log.e("WORKER", "⚠️ Permiso READ_PHONE_STATE no otorgado");
+                Log.w("WORKER", "READ_PHONE_STATE no concedido", e);
             }
         }
-
-        Log.d("WORKER", "📞 Número de línea cargado desde prefs (o SIM): " + phoneNumber);
 
         DeviceInfo info = new DeviceInfo(
                 Build.BRAND,
@@ -85,7 +83,7 @@ public class DeviceInfoWorker extends Worker {
 
         try {
             Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl("http://192.168.23.151:5000")
+                    .baseUrl("http://192.168.25.59:5001")
                     .addConverterFactory(GsonConverterFactory.create())
                     .build();
 
@@ -94,35 +92,33 @@ public class DeviceInfoWorker extends Worker {
             Response<ResponseBody> response = call.execute();
 
             if (response.isSuccessful()) {
-                Log.d("WORKER", "✅ Info enviada correctamente (se reprograma en 8 horas)");
-
-                OneTimeWorkRequest nextSuccessRequest = new OneTimeWorkRequest.Builder(DeviceInfoWorker.class)
-                        .setInitialDelay(8, TimeUnit.HOURS)
-                        .build();
-                WorkManager.getInstance(context).enqueue(nextSuccessRequest);
-
+                Log.i("WORKER", "✅ Datos enviados correctamente. Próximo envío en 8h");
+                scheduleNext(context, 8);
                 return Result.success();
             } else {
-                Log.e("WORKER", "❌ Error HTTP: " + response.code() + " (se reprograma en 1 hora)");
-
-                OneTimeWorkRequest retryRequest = new OneTimeWorkRequest.Builder(DeviceInfoWorker.class)
-                        .setInitialDelay(1, TimeUnit.HOURS)
-                        .build();
-                WorkManager.getInstance(context).enqueue(retryRequest);
-
+                Log.w("WORKER", "❌ Fallo HTTP " + response.code() + ". Reintento en 1h");
+                scheduleNext(context, 1);
                 return Result.retry();
             }
 
         } catch (Exception e) {
-            Log.e("WORKER", "🚨 Fallo al enviar: " + e.getMessage(), e);
-
-            OneTimeWorkRequest retryRequest = new OneTimeWorkRequest.Builder(DeviceInfoWorker.class)
-                    .setInitialDelay(1, TimeUnit.HOURS)
-                    .build();
-            WorkManager.getInstance(context).enqueue(retryRequest);
-
+            Log.e("WORKER", "🚨 Error al enviar datos: " + e.getMessage(), e);
+            scheduleNext(context, 1);
             return Result.retry();
         }
+    }
+
+    private void scheduleNext(Context context, int hours) {
+        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(DeviceInfoWorker.class)
+                .setInitialDelay(hours, TimeUnit.HOURS)
+                .build();
+        WorkManager.getInstance(context).enqueue(request);
+    }
+
+    private int getBatteryLevel(Context context) {
+        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+        Intent batteryStatus = context.registerReceiver(null, ifilter);
+        return batteryStatus != null ? batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) : -1;
     }
 
     private String getWifiIpAddress(Context context) {
@@ -138,7 +134,7 @@ public class DeviceInfoWorker extends Worker {
                     (ipInt >> 24 & 0xff)
             );
         } catch (Exception e) {
-            Log.e("WORKER", "Error IP Wi-Fi: " + e.getMessage(), e);
+            Log.w("WORKER", "Error al obtener IP", e);
             return "0.0.0.0";
         }
     }
@@ -152,3 +148,5 @@ public class DeviceInfoWorker extends Worker {
         return false;
     }
 }
+
+

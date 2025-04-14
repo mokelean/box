@@ -2,7 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:background="#FFFFFF">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -11,6 +11,26 @@
         android:gravity="center_horizontal"
         android:padding="24dp">
 
+        <!-- Logo -->
+        <ImageView
+            android:id="@+id/logoImage"
+            android:layout_width="220dp"
+            android:layout_height="wrap_content"
+            android:src="@drawable/logo_boxmark"
+            android:contentDescription="Logo TrackerBox"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TrackerBox"
+            android:textSize="20sp"
+            android:textColor="#222222"
+            android:textStyle="bold"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Campo número -->
         <EditText
             android:id="@+id/phoneEditText"
             android:layout_width="match_parent"
@@ -19,21 +39,42 @@
             android:inputType="phone"
             android:padding="12dp"
             android:layout_marginBottom="16dp"
+            android:backgroundTint="@color/edittext_background_selector"
+            android:textColorHint="#888888"
+            android:textColor="@color/edittext_text_selector"
             android:imeOptions="actionDone" />
 
+        <!-- Confirmar botón -->
         <Button
             android:id="@+id/confirmPhoneButton"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Confirmar número"
-            android:layout_marginBottom="32dp" />
+            android:layout_marginBottom="16dp"
+            android:backgroundTint="@color/boton_confirmar_color"
+            android:textColor="@color/boton_confirmar_texto" />
 
+        <!-- Enviar botón -->
         <Button
             android:id="@+id/sendButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enviar reporte"
+            android:backgroundTint="#555555"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Footer -->
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Enviar reporte" />
+            android:text="Version 1.0 - Developed by Boxmark"
+            android:textSize="12sp"
+            android:textColor="#888888"
+            android:layout_marginTop="16dp" />
 
     </LinearLayout>
 </ScrollView>
+
+
 
