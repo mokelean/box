@@ -3,22 +3,27 @@ package com.example.dispositivotracker;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.work.ExistingWorkPolicy;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkManager;
 
 import android.Manifest;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -50,58 +55,68 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "✅ Número ya confirmado previamente, desactivando input");
         }
 
-        confirmPhoneButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String numeroIngresado = phoneEditText.getText().toString().trim();
-                Log.d(TAG, "📥 Botón confirmar clickeado. Número ingresado: " + numeroIngresado);
+        confirmPhoneButton.setOnClickListener(v -> {
+            String numeroIngresado = phoneEditText.getText().toString().trim();
+            Log.d(TAG, "📥 Botón confirmar clickeado. Número ingresado: " + numeroIngresado);
 
-                if (!numeroIngresado.isEmpty()) {
-                    SharedPreferences.Editor editor = getSharedPreferences("tracker_prefs", MODE_PRIVATE).edit();
-                    editor.putString("numero_linea", numeroIngresado);
-                    editor.apply();
+            if (!numeroIngresado.isEmpty()) {
+                SharedPreferences.Editor editor = getSharedPreferences("tracker_prefs", MODE_PRIVATE).edit();
+                editor.putString("numero_linea", numeroIngresado);
+                editor.apply();
 
-                    phoneEditText.setEnabled(false);
-                    confirmPhoneButton.setEnabled(false);
+                phoneEditText.setEnabled(false);
+                confirmPhoneButton.setEnabled(false);
 
-                    Toast.makeText(MainActivity.this, "✅ Número guardado", Toast.LENGTH_SHORT).show();
-                    Log.d(TAG, "💾 Número guardado en SharedPreferences y campos desactivados");
-                } else {
-                    Toast.makeText(MainActivity.this, "⚠️ Ingrese un número válido", Toast.LENGTH_SHORT).show();
-                    Log.w(TAG, "❌ Intento de guardar número vacío");
+                Toast.makeText(MainActivity.this, "✅ Número guardado", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "💾 Número guardado en SharedPreferences y campos desactivados");
+            } else {
+                Toast.makeText(MainActivity.this, "⚠️ Ingrese un número válido", Toast.LENGTH_SHORT).show();
+                Log.w(TAG, "❌ Intento de guardar número vacío");
+            }
+        });
+
+        sendButton.setOnClickListener(v -> {
+            Log.d(TAG, "📤 Botón 'Enviar reporte' clickeado - envío directo");
+
+            SharedPreferences prefsLocal = getSharedPreferences("tracker_prefs", MODE_PRIVATE);
+            String phoneNumber = prefsLocal.getString("numero_linea", "");
+
+            DeviceInfo info = new DeviceInfo(
+                    Build.BRAND,
+                    Build.MODEL,
+                    Build.MANUFACTURER,
+                    Build.VERSION.RELEASE,
+                    Build.VERSION.SDK_INT,
+                    Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID),
+                    "192.168.1.123",  // IP fija de prueba
+                    85,               // Nivel de batería fijo de prueba
+                    "Wi-Fi",
+                    "Manual",
+                    phoneNumber
+            );
+
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl("http://192.168.25.59:5001")
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+
+            ApiService apiService = retrofit.create(ApiService.class);
+            Call<ResponseBody> call = apiService.sendDeviceInfo(info);
+
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            executor.execute(() -> {
+                try {
+                    Response<ResponseBody> response = call.execute();
+                    if (response.isSuccessful()) {
+                        Log.i(TAG, "✅ POST exitoso desde botón");
+                    } else {
+                        Log.e(TAG, "❌ Error HTTP: " + response.code());
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "🚨 Error al enviar POST: " + e.getMessage(), e);
                 }
-            }
+            });
         });
-
-        sendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(TAG, "📤 Botón 'Enviar reporte' clickeado");
-                ejecutarTareaManual();
-            }
-        });
-
-        programarTareaCada3Minutos();
-        Log.d(TAG, "⏱️ Tarea automática programada cada 3 minutos");
-    }
-
-    private void ejecutarTareaManual() {
-        Log.d(TAG, "🚀 Ejecutando tarea manual de envío");
-        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(DeviceInfoWorker.class).build();
-        WorkManager.getInstance(this).enqueue(request);
-    }
-
-    private void programarTareaCada3Minutos() {
-        Log.d(TAG, "📅 Encolando tarea inicial con delay de 3 minutos");
-        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(DeviceInfoWorker.class)
-                .setInitialDelay(3, TimeUnit.MINUTES)
-                .build();
-
-        WorkManager.getInstance(this).enqueueUniqueWork(
-                "DeviceInfoTestWork",
-                ExistingWorkPolicy.REPLACE,
-                request
-        );
     }
 
     private void pedirPermisosSiEsNecesario() {
@@ -118,4 +133,3 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 }
-

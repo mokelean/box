@@ -35,6 +35,7 @@ public class DeviceInfoWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
+        Log.d("WORKER", "🔥 ENTRANDO A doWork()");
         Log.d("WORKER", "📦 Ejecutando DeviceInfoWorker");
 
         Context context = getApplicationContext();
