@@ -1,3 +1,5 @@
+
+
 package com.example.dispositivotracker;
 
 import android.content.Context;
@@ -44,6 +46,7 @@ public class DeviceInfoWorker extends Worker {
         String ip = getWifiIpAddress(context);
         int batteryLevel = getBatteryLevel(context);
         boolean isWifi = isConnectedViaWifi(context);
+        String ssid = getWifiSsid(context);
 
         String phoneNumber = prefs.getString("numero_linea", "");
         if (phoneNumber.isEmpty()) {
@@ -76,6 +79,7 @@ public class DeviceInfoWorker extends Worker {
                 Build.VERSION.SDK_INT,
                 Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID),
                 ip,
+                ssid,
                 batteryLevel,
                 isWifi ? "Wi-Fi" : "Datos móviles",
                 simOperator,
@@ -140,6 +144,22 @@ public class DeviceInfoWorker extends Worker {
         }
     }
 
+    private String getWifiSsid(Context context) {
+        try {
+            android.net.wifi.WifiManager wifiManager = (android.net.wifi.WifiManager)
+                    context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if (wifiManager != null && wifiManager.getConnectionInfo() != null) {
+                String ssid = wifiManager.getConnectionInfo().getSSID();
+                if (ssid != null) {
+                    return ssid.replace("\"", "");
+                }
+            }
+        } catch (Exception e) {
+            Log.w("WORKER", "Error al obtener SSID", e);
+        }
+        return "Desconocido";
+    }
+
     private boolean isConnectedViaWifi(Context context) {
         ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -149,5 +169,3 @@ public class DeviceInfoWorker extends Worker {
         return false;
     }
 }
-
-

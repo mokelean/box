@@ -25,6 +25,9 @@ public class DeviceInfo {
     @SerializedName("ip_address")
     private String ipAddress;
 
+    @SerializedName("wifi_ssid")
+    private String wifiSsid;
+
     @SerializedName("battery_level")
     private int batteryLevel;
 
@@ -38,8 +41,8 @@ public class DeviceInfo {
     private String phoneNumber;
 
     public DeviceInfo(String brand, String model, String manufacturer, String androidVersion,
-                      int apiLevel, String deviceId, String ipAddress, int batteryLevel,
-                      String networkType, String simOperator, String phoneNumber) {
+                      int apiLevel, String deviceId, String ipAddress, String wifiSsid,
+                      int batteryLevel, String networkType, String simOperator, String phoneNumber) {
         this.brand = brand;
         this.model = model;
         this.manufacturer = manufacturer;
@@ -47,9 +50,11 @@ public class DeviceInfo {
         this.apiLevel = apiLevel;
         this.deviceId = deviceId;
         this.ipAddress = ipAddress;
+        this.wifiSsid = wifiSsid;
         this.batteryLevel = batteryLevel;
         this.networkType = networkType;
         this.simOperator = simOperator;
         this.phoneNumber = phoneNumber;
     }
 }
+
