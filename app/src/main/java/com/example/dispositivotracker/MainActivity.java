@@ -1,14 +1,16 @@
-
 package com.example.dispositivotracker;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import android.Manifest;
+import android.content.ComponentName;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -16,19 +18,21 @@ import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
+import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -51,6 +55,24 @@ public class MainActivity extends AppCompatActivity {
 
         pedirPermisosSiEsNecesario();
         verificarYAdvertirUbicacion();
+        solicitarIgnorarOptimizaciones();
+        solicitarPermisoAutoInicio(); // ✅ NUEVO
+
+        WorkManager.getInstance(this).cancelUniqueWork("device_info_worker");
+        Log.d(TAG, "🧹 Cancelando trabajos previos");
+
+        PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
+                DeviceInfoWorker.class,
+                15, TimeUnit.MINUTES
+        ).build();
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "device_info_worker",
+                ExistingPeriodicWorkPolicy.REPLACE,
+                request
+        );
+
+        Log.d(TAG, "⏱️ PeriodicWorkRequest limpio y registrado desde MainActivity");
 
         sendButton = findViewById(R.id.sendButton);
         phoneEditText = findViewById(R.id.phoneEditText);
@@ -130,6 +152,58 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         });
+    }
+
+    private void solicitarIgnorarOptimizaciones() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+            if (!pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                Toast.makeText(this, "Para que la app funcione siempre, se solicitará ignorar optimización de batería.", Toast.LENGTH_LONG).show();
+
+                Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            } else {
+                Log.d(TAG, "🔋 Ya se ignoran las optimizaciones de batería");
+            }
+        }
+    }
+
+    private void solicitarPermisoAutoInicio() {
+        String fabricante = Build.MANUFACTURER.toLowerCase();
+        Log.d(TAG, "📱 Fabricante detectado: " + fabricante);
+
+        Intent intent = new Intent();
+        switch (fabricante) {
+            case "xiaomi":
+                intent.setComponent(new ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"));
+                break;
+            case "huawei":
+                intent.setComponent(new ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"));
+                break;
+            case "oppo":
+                intent.setComponent(new ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity"));
+                break;
+            case "vivo":
+                intent.setComponent(new ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"));
+                break;
+            case "letv":
+                intent.setComponent(new ComponentName("com.letv.android.letvsafe", "com.letv.android.letvsafe.AutobootManageActivity"));
+                break;
+            case "asus":
+                intent.setComponent(new ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.entry.FunctionActivity"));
+                break;
+            default:
+                Log.d(TAG, "ℹ️ Fabricante no requiere manejo especial de auto-inicio");
+                return;
+        }
+
+        try {
+            startActivity(intent);
+            Toast.makeText(this, "Activá el inicio automático para esta app si es posible.", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Log.w(TAG, "❌ No se pudo abrir la pantalla de auto-inicio: " + e.getMessage());
+        }
     }
 
     private void pedirPermisosSiEsNecesario() {

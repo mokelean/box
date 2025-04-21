@@ -1,5 +1,3 @@
-
-
 package com.example.dispositivotracker;
 
 import android.content.Context;
@@ -15,12 +13,8 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
-
-import java.util.concurrent.TimeUnit;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -30,6 +24,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class DeviceInfoWorker extends Worker {
 
+    private static final String TAG = "WORKER";
+
     public DeviceInfoWorker(@NonNull Context context, @NonNull WorkerParameters params) {
         super(context, params);
     }
@@ -37,8 +33,7 @@ public class DeviceInfoWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        Log.d("WORKER", "🔥 ENTRANDO A doWork()");
-        Log.d("WORKER", "📦 Ejecutando DeviceInfoWorker");
+        Log.d(TAG, "🔥 Ejecutando DeviceInfoWorker");
 
         Context context = getApplicationContext();
         SharedPreferences prefs = context.getSharedPreferences("tracker_prefs", Context.MODE_PRIVATE);
@@ -67,7 +62,7 @@ public class DeviceInfoWorker extends Worker {
                     }
                 }
             } catch (SecurityException e) {
-                Log.w("WORKER", "READ_PHONE_STATE no concedido", e);
+                Log.w(TAG, "READ_PHONE_STATE no concedido", e);
             }
         }
 
@@ -97,27 +92,17 @@ public class DeviceInfoWorker extends Worker {
             Response<ResponseBody> response = call.execute();
 
             if (response.isSuccessful()) {
-                Log.i("WORKER", "✅ Datos enviados correctamente. Próximo envío en 8h");
-                scheduleNext(context, 8);
+                Log.i(TAG, "✅ Datos enviados correctamente");
                 return Result.success();
             } else {
-                Log.w("WORKER", "❌ Fallo HTTP " + response.code() + ". Reintento en 1h");
-                scheduleNext(context, 1);
+                Log.w(TAG, "❌ Fallo HTTP " + response.code());
                 return Result.retry();
             }
 
         } catch (Exception e) {
-            Log.e("WORKER", "🚨 Error al enviar datos: " + e.getMessage(), e);
-            scheduleNext(context, 1);
+            Log.e(TAG, "🚨 Error al enviar datos: " + e.getMessage(), e);
             return Result.retry();
         }
-    }
-
-    private void scheduleNext(Context context, int hours) {
-        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(DeviceInfoWorker.class)
-                .setInitialDelay(hours, TimeUnit.HOURS)
-                .build();
-        WorkManager.getInstance(context).enqueue(request);
     }
 
     private int getBatteryLevel(Context context) {
@@ -139,7 +124,7 @@ public class DeviceInfoWorker extends Worker {
                     (ipInt >> 24 & 0xff)
             );
         } catch (Exception e) {
-            Log.w("WORKER", "Error al obtener IP", e);
+            Log.w(TAG, "Error al obtener IP", e);
             return "0.0.0.0";
         }
     }
@@ -155,7 +140,7 @@ public class DeviceInfoWorker extends Worker {
                 }
             }
         } catch (Exception e) {
-            Log.w("WORKER", "Error al obtener SSID", e);
+            Log.w(TAG, "Error al obtener SSID", e);
         }
         return "Desconocido";
     }

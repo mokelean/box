@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
 
     <application
         android:networkSecurityConfig="@xml/network_security_config"
@@ -29,6 +31,23 @@
             </intent-filter>
         </activity>
 
+        <!-- ✅ RECEIVER PARA REINICIO DEL TELÉFONO -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- ✅ SERVICIO EN PRIMER PLANO PARA REPORTES -->
+        <service
+            android:name=".DeviceTrackerService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+        <!-- "location" si usás ubicación; "dataSync" también puede aplicar -->
     </application>
 
 </manifest>
