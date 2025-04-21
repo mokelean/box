@@ -56,7 +56,8 @@ public class MainActivity extends AppCompatActivity {
         pedirPermisosSiEsNecesario();
         verificarYAdvertirUbicacion();
         solicitarIgnorarOptimizaciones();
-        solicitarPermisoAutoInicio(); // ✅ NUEVO
+        solicitarPermisoAutoInicio();
+        sugerirInicioAutomaticoParaTCL(); // ✅ Agregado para TCL
 
         WorkManager.getInstance(this).cancelUniqueWork("device_info_worker");
         Log.d(TAG, "🧹 Cancelando trabajos previos");
@@ -203,6 +204,21 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Activá el inicio automático para esta app si es posible.", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Log.w(TAG, "❌ No se pudo abrir la pantalla de auto-inicio: " + e.getMessage());
+        }
+    }
+
+    private void sugerirInicioAutomaticoParaTCL() {
+        if (Build.MANUFACTURER.toLowerCase().contains("tcl") || Build.BRAND.toLowerCase().contains("tcl")) {
+            new AlertDialog.Builder(this)
+                    .setTitle("⚠️ Habilitar inicio automático")
+                    .setMessage("Para que la app funcione después de reinicios, por favor activá el inicio automático para esta aplicación en la configuración del sistema.")
+                    .setPositiveButton("Ir a configuración", (dialog, which) -> {
+                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        intent.setData(Uri.parse("package:" + getPackageName()));
+                        startActivity(intent);
+                    })
+                    .setNegativeButton("Cancelar", null)
+                    .show();
         }
     }
 
