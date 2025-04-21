@@ -9,7 +9,6 @@ import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 
 import android.Manifest;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -18,14 +17,13 @@ import android.content.pm.PackageManager;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkCapabilities;
-import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.PowerManager;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -45,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private Button sendButton;
     private EditText phoneEditText;
     private Button confirmPhoneButton;
+    private Button editPhoneButton;
     private static final String TAG = "MAIN";
 
     @Override
@@ -55,15 +54,13 @@ public class MainActivity extends AppCompatActivity {
 
         pedirPermisosSiEsNecesario();
         verificarYAdvertirUbicacion();
-        solicitarIgnorarOptimizaciones();
-        solicitarPermisoAutoInicio(); // ✅ NUEVO
 
         WorkManager.getInstance(this).cancelUniqueWork("device_info_worker");
         Log.d(TAG, "🧹 Cancelando trabajos previos");
 
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
                 DeviceInfoWorker.class,
-                15, TimeUnit.MINUTES
+                30, TimeUnit.MINUTES
         ).build();
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
@@ -72,11 +69,12 @@ public class MainActivity extends AppCompatActivity {
                 request
         );
 
-        Log.d(TAG, "⏱️ PeriodicWorkRequest limpio y registrado desde MainActivity");
+        Log.d(TAG, "⏱️ PeriodicWorkRequest registrado para cada 30 minutos");
 
         sendButton = findViewById(R.id.sendButton);
         phoneEditText = findViewById(R.id.phoneEditText);
         confirmPhoneButton = findViewById(R.id.confirmPhoneButton);
+        editPhoneButton = findViewById(R.id.editPhoneButton);
 
         SharedPreferences prefs = getSharedPreferences("tracker_prefs", MODE_PRIVATE);
         String savedNumber = prefs.getString("numero_linea", "");
@@ -86,7 +84,10 @@ public class MainActivity extends AppCompatActivity {
             phoneEditText.setText(savedNumber);
             phoneEditText.setEnabled(false);
             confirmPhoneButton.setEnabled(false);
+            editPhoneButton.setVisibility(View.VISIBLE);
             Log.d(TAG, "✅ Número ya confirmado previamente, desactivando input");
+        } else {
+            editPhoneButton.setVisibility(View.GONE);
         }
 
         confirmPhoneButton.setOnClickListener(v -> {
@@ -100,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
 
                 phoneEditText.setEnabled(false);
                 confirmPhoneButton.setEnabled(false);
+                editPhoneButton.setVisibility(View.VISIBLE);
 
                 Toast.makeText(MainActivity.this, "✅ Número guardado", Toast.LENGTH_SHORT).show();
                 Log.d(TAG, "💾 Número guardado en SharedPreferences y campos desactivados");
@@ -107,6 +109,13 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "⚠️ Ingrese un número válido", Toast.LENGTH_SHORT).show();
                 Log.w(TAG, "❌ Intento de guardar número vacío");
             }
+        });
+
+        editPhoneButton.setOnClickListener(v -> {
+            phoneEditText.setEnabled(true);
+            confirmPhoneButton.setEnabled(true);
+            editPhoneButton.setVisibility(View.GONE);
+            Toast.makeText(MainActivity.this, "✏️ Editá el número y volvé a confirmar", Toast.LENGTH_SHORT).show();
         });
 
         sendButton.setOnClickListener(v -> {
@@ -152,58 +161,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         });
-    }
-
-    private void solicitarIgnorarOptimizaciones() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-            if (!pm.isIgnoringBatteryOptimizations(getPackageName())) {
-                Toast.makeText(this, "Para que la app funcione siempre, se solicitará ignorar optimización de batería.", Toast.LENGTH_LONG).show();
-
-                Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-                intent.setData(Uri.parse("package:" + getPackageName()));
-                startActivity(intent);
-            } else {
-                Log.d(TAG, "🔋 Ya se ignoran las optimizaciones de batería");
-            }
-        }
-    }
-
-    private void solicitarPermisoAutoInicio() {
-        String fabricante = Build.MANUFACTURER.toLowerCase();
-        Log.d(TAG, "📱 Fabricante detectado: " + fabricante);
-
-        Intent intent = new Intent();
-        switch (fabricante) {
-            case "xiaomi":
-                intent.setComponent(new ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"));
-                break;
-            case "huawei":
-                intent.setComponent(new ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"));
-                break;
-            case "oppo":
-                intent.setComponent(new ComponentName("com.coloros.safecenter", "com.coloros.safecenter.startupapp.StartupAppListActivity"));
-                break;
-            case "vivo":
-                intent.setComponent(new ComponentName("com.iqoo.secure", "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"));
-                break;
-            case "letv":
-                intent.setComponent(new ComponentName("com.letv.android.letvsafe", "com.letv.android.letvsafe.AutobootManageActivity"));
-                break;
-            case "asus":
-                intent.setComponent(new ComponentName("com.asus.mobilemanager", "com.asus.mobilemanager.entry.FunctionActivity"));
-                break;
-            default:
-                Log.d(TAG, "ℹ️ Fabricante no requiere manejo especial de auto-inicio");
-                return;
-        }
-
-        try {
-            startActivity(intent);
-            Toast.makeText(this, "Activá el inicio automático para esta app si es posible.", Toast.LENGTH_LONG).show();
-        } catch (Exception e) {
-            Log.w(TAG, "❌ No se pudo abrir la pantalla de auto-inicio: " + e.getMessage());
-        }
     }
 
     private void pedirPermisosSiEsNecesario() {

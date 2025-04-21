@@ -51,19 +51,17 @@ public class DeviceInfoWorker extends Worker {
             }
         }
 
-        String simOperator = !phoneNumber.isEmpty() ? "Manual" : "Desconocido";
-        if (simOperator.equals("Desconocido")) {
-            try {
-                TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-                if (tm != null) {
-                    simOperator = tm.getSimOperatorName();
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-                        phoneNumber = tm.getLine1Number();
-                    }
+        String simOperator = "Desconocido";
+        try {
+            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            if (tm != null) {
+                simOperator = tm.getSimOperatorName();
+                if ((phoneNumber == null || phoneNumber.isEmpty()) && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                    phoneNumber = tm.getLine1Number();
                 }
-            } catch (SecurityException e) {
-                Log.w(TAG, "READ_PHONE_STATE no concedido", e);
             }
+        } catch (SecurityException e) {
+            Log.w(TAG, "READ_PHONE_STATE no concedido", e);
         }
 
         DeviceInfo info = new DeviceInfo(

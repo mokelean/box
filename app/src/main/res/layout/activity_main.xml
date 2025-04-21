@@ -54,6 +54,13 @@
             android:backgroundTint="@color/boton_confirmar_color"
             android:textColor="@color/boton_confirmar_texto" />
 
+        <Button
+            android:id="@+id/editPhoneButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Editar número"
+            android:layout_marginTop="8dp"/>
+
         <!-- Enviar botón -->
         <Button
             android:id="@+id/sendButton"

@@ -26,7 +26,7 @@ public class BootReceiver extends BroadcastReceiver {
 
             PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
                     DeviceInfoWorker.class,
-                    15, TimeUnit.MINUTES
+                    30, TimeUnit.MINUTES
             ).build();
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
