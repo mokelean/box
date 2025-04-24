@@ -19,24 +19,26 @@ import java.util.concurrent.TimeUnit;
 
 public class DeviceTrackerService extends Service {
 
-    private static final String CHANNEL_ID = "tracker_channel";
+    private static final String CHANNEL_ID = "tracker_channel_v2";  // ← nuevo ID para forzar recreación
     private static final String TAG = "FOREGROUND_SERVICE";
 
     @Override
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "🔧 Servicio en primer plano creado");
+
         crearCanalNotificacion();
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Tracker activo")
                 .setContentText("Reportando dispositivo en segundo plano")
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setSmallIcon(R.mipmap.ic_launcher) // ← tu ícono chico
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT) // prioridad adecuada
+                .setOngoing(true) // evita que el usuario lo cierre por error
                 .build();
 
         startForeground(1, notification);
 
-        // 🧠 Reprogramar Worker desde el servicio
         WorkManager.getInstance(this).cancelUniqueWork("device_info_worker");
 
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
@@ -58,8 +60,11 @@ public class DeviceTrackerService extends Service {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
                     "Tracker en segundo plano",
-                    NotificationManager.IMPORTANCE_LOW
+                    NotificationManager.IMPORTANCE_DEFAULT  // ← prioridad visible
             );
+            channel.setDescription("Muestra que la app TrackerBox está activa en segundo plano");
+            channel.setShowBadge(true);
+
             NotificationManager manager = getSystemService(NotificationManager.class);
             if (manager != null) {
                 manager.createNotificationChannel(channel);
