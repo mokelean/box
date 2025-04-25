@@ -38,7 +38,7 @@ public class DeviceTrackerService extends Service {
             Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                     .setContentTitle("Tracker activo")
                     .setContentText("Reportando dispositivo en segundo plano")
-                    .setSmallIcon(R.drawable.ic_stat_notify) // ✔️ icono vector blanco sin fondo
+                    .setSmallIcon(R.drawable.ic_notification)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setCategory(NotificationCompat.CATEGORY_SERVICE)
                     .setOngoing(true)

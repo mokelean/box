@@ -7,6 +7,7 @@ import androidx.core.content.ContextCompat;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
+import android.graphics.Color;
 
 import android.Manifest;
 import android.content.Context;
@@ -78,16 +79,6 @@ public class MainActivity extends AppCompatActivity {
         confirmPhoneButton = findViewById(R.id.confirmPhoneButton);
         editPhoneButton = findViewById(R.id.editPhoneButton);
 
-        Button btnIniciarIcono = findViewById(R.id.btnIniciarIcono);
-        btnIniciarIcono.setOnClickListener(v -> {
-            Log.d(TAG, "▶️ Botón de prueba tocado: iniciando servicio manualmente...");
-            Intent intent = new Intent(this, DeviceTrackerService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent);
-            } else {
-                startService(intent);
-            }
-        });
 
         SharedPreferences prefs = getSharedPreferences("tracker_prefs", MODE_PRIVATE);
         String savedNumber = prefs.getString("numero_linea", "");
@@ -96,6 +87,9 @@ public class MainActivity extends AppCompatActivity {
         if (!savedNumber.isEmpty()) {
             phoneEditText.setText(savedNumber);
             phoneEditText.setEnabled(false);
+            phoneEditText.setAlpha(0.5f);
+            phoneEditText.setTextColor(Color.GRAY);
+            phoneEditText.setBackgroundColor(Color.parseColor("#EEEEEE"));
             confirmPhoneButton.setEnabled(false);
             editPhoneButton.setVisibility(View.VISIBLE);
             Log.d(TAG, "✅ Número ya confirmado previamente, desactivando input");
@@ -113,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
                 editor.apply();
 
                 phoneEditText.setEnabled(false);
+                phoneEditText.setAlpha(0.5f); // 🔘 visualmente desactivado
                 confirmPhoneButton.setEnabled(false);
                 editPhoneButton.setVisibility(View.VISIBLE);
 
@@ -125,11 +120,31 @@ public class MainActivity extends AppCompatActivity {
         });
 
         editPhoneButton.setOnClickListener(v -> {
-            phoneEditText.setEnabled(true);
-            confirmPhoneButton.setEnabled(true);
-            editPhoneButton.setVisibility(View.GONE);
-            Toast.makeText(MainActivity.this, "✏️ Editá el número y volvé a confirmar", Toast.LENGTH_SHORT).show();
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("Autenticación requerida");
+            builder.setMessage("Ingrese la clave para editar el número");
+
+            final EditText input = new EditText(MainActivity.this);
+            input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            builder.setView(input);
+
+            builder.setPositiveButton("Aceptar", (dialog, which) -> {
+                String enteredPassword = input.getText().toString().trim();
+                if (enteredPassword.equals("box4321")) {
+                    phoneEditText.setEnabled(true);
+                    phoneEditText.setAlpha(1.0f); // 🔘 visualmente activo
+                    confirmPhoneButton.setEnabled(true);
+                    editPhoneButton.setVisibility(View.GONE);
+                    Toast.makeText(MainActivity.this, "✏️ Editá el número y volvé a confirmar", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "❌ Clave incorrecta", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            builder.setNegativeButton("Cancelar", (dialog, which) -> dialog.cancel());
+            builder.show();
         });
+
 
         sendButton.setOnClickListener(v -> {
             Log.d(TAG, "📤 Botón 'Enviar reporte' clickeado - envío directo");

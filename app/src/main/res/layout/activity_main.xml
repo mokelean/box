@@ -71,21 +71,11 @@
             android:textColor="#FFFFFF"
             android:layout_marginBottom="24dp" />
 
-        <!-- 🔔 Botón para probar ícono -->
-        <Button
-            android:id="@+id/btnIniciarIcono"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="🔔 Probar ícono tracker"
-            android:backgroundTint="#2196F3"
-            android:textColor="#FFFFFF"
-            android:layout_marginTop="8dp" />
-
         <!-- Footer -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Versión 1.0 - Developed by Boxmark"
+            android:text="Versión 1.1 - Developed by Boxmark"
             android:textSize="12sp"
             android:textColor="#888888"
             android:layout_marginTop="16dp" />
