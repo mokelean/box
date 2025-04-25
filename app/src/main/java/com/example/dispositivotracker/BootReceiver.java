@@ -3,7 +3,6 @@ package com.example.dispositivotracker;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.util.Log;
 
 public class BootReceiver extends BroadcastReceiver {
@@ -15,14 +14,10 @@ public class BootReceiver extends BroadcastReceiver {
         if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
             Log.d(TAG, "🔁 BOOT_COMPLETED recibido");
 
-            // Iniciar el servicio en primer plano
-            Log.d(TAG, "🚀 Iniciando DeviceTrackerService desde BootReceiver");
+            // ⛔️ NO usar startForegroundService aquí (prohibido por Android)
+            Log.d(TAG, "🚀 Iniciando DeviceTrackerService en background desde BootReceiver");
             Intent serviceIntent = new Intent(context, DeviceTrackerService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent);
-            } else {
-                context.startService(serviceIntent);
-            }
+            context.startService(serviceIntent);  // solo startService
         }
     }
 }

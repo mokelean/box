@@ -52,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "🔄 onCreate iniciado");
         setContentView(R.layout.activity_main);
 
+        iniciarServicioSiPermisos();
+
         pedirPermisosSiEsNecesario();
         verificarYAdvertirUbicacion();
 
@@ -75,6 +77,17 @@ public class MainActivity extends AppCompatActivity {
         phoneEditText = findViewById(R.id.phoneEditText);
         confirmPhoneButton = findViewById(R.id.confirmPhoneButton);
         editPhoneButton = findViewById(R.id.editPhoneButton);
+
+        Button btnIniciarIcono = findViewById(R.id.btnIniciarIcono);
+        btnIniciarIcono.setOnClickListener(v -> {
+            Log.d(TAG, "▶️ Botón de prueba tocado: iniciando servicio manualmente...");
+            Intent intent = new Intent(this, DeviceTrackerService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent);
+            } else {
+                startService(intent);
+            }
+        });
 
         SharedPreferences prefs = getSharedPreferences("tracker_prefs", MODE_PRIVATE);
         String savedNumber = prefs.getString("numero_linea", "");
@@ -257,4 +270,22 @@ public class MainActivity extends AppCompatActivity {
         }
         return false;
     }
+
+    private void iniciarServicioSiPermisos() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE) == PackageManager.PERMISSION_GRANTED) {
+
+            Intent intent = new Intent(this, DeviceTrackerService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent);
+            } else {
+                startService(intent);
+            }
+
+            Log.d(TAG, "🚀 Servicio DeviceTrackerService iniciado");
+        } else {
+            Log.w(TAG, "⛔ No se puede iniciar el servicio, permisos faltantes");
+        }
+    }
+
 }

@@ -39,10 +39,8 @@
             android:inputType="phone"
             android:padding="12dp"
             android:layout_marginBottom="16dp"
-            android:backgroundTint="@color/edittext_background_selector"
             android:textColorHint="#888888"
-            android:textColor="@color/edittext_text_selector"
-            android:imeOptions="actionDone" />
+            android:textColor="#000000" />
 
         <!-- Confirmar botón -->
         <Button
@@ -51,15 +49,17 @@
             android:layout_height="wrap_content"
             android:text="Confirmar número"
             android:layout_marginBottom="16dp"
-            android:backgroundTint="@color/boton_confirmar_color"
-            android:textColor="@color/boton_confirmar_texto" />
+            android:backgroundTint="#4CAF50"
+            android:textColor="#FFFFFF" />
 
+        <!-- Editar botón -->
         <Button
             android:id="@+id/editPhoneButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Editar número"
-            android:layout_marginTop="8dp"/>
+            android:layout_marginTop="8dp"
+            android:visibility="gone" />
 
         <!-- Enviar botón -->
         <Button
@@ -71,17 +71,24 @@
             android:textColor="#FFFFFF"
             android:layout_marginBottom="24dp" />
 
+        <!-- 🔔 Botón para probar ícono -->
+        <Button
+            android:id="@+id/btnIniciarIcono"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔔 Probar ícono tracker"
+            android:backgroundTint="#2196F3"
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="8dp" />
+
         <!-- Footer -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Version 1.0 - Developed by Boxmark"
+            android:text="Versión 1.0 - Developed by Boxmark"
             android:textSize="12sp"
             android:textColor="#888888"
             android:layout_marginTop="16dp" />
 
     </LinearLayout>
 </ScrollView>
-
-
-
