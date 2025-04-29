@@ -14,6 +14,7 @@
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:networkSecurityConfig="@xml/network_security_config"
@@ -44,13 +45,21 @@
             </intent-filter>
         </receiver>
 
+        <!-- 🔓 UNLOCK + SCREEN_ON RECEIVER -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
         <!-- 🛰️ FOREGROUND SERVICE -->
         <service
             android:name=".DeviceTrackerService"
             android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
-        <!-- Usá "location" solo si accedés a ubicación -->
+            android:exported="false" />
     </application>
 
 </manifest>

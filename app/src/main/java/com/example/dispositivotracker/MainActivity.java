@@ -4,9 +4,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.work.ExistingPeriodicWorkPolicy;
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkManager;
 import android.graphics.Color;
 
 import android.Manifest;
@@ -58,22 +55,6 @@ public class MainActivity extends AppCompatActivity {
         pedirPermisosSiEsNecesario();
         verificarYAdvertirUbicacion();
 
-        WorkManager.getInstance(this).cancelUniqueWork("device_info_worker");
-        Log.d(TAG, "🧹 Cancelando trabajos previos");
-
-        PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
-                DeviceInfoWorker.class,
-                30, TimeUnit.MINUTES
-        ).build();
-
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-                "device_info_worker",
-                ExistingPeriodicWorkPolicy.REPLACE,
-                request
-        );
-
-        Log.d(TAG, "⏱️ PeriodicWorkRequest registrado para cada 30 minutos");
-
         sendButton = findViewById(R.id.sendButton);
         phoneEditText = findViewById(R.id.phoneEditText);
         confirmPhoneButton = findViewById(R.id.confirmPhoneButton);
@@ -87,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
         if (!savedNumber.isEmpty()) {
             phoneEditText.setText(savedNumber);
             phoneEditText.setEnabled(false);
+            phoneEditText.setTextColor(Color.parseColor("#999999"));
             phoneEditText.setAlpha(0.5f);
             phoneEditText.setTextColor(Color.GRAY);
             phoneEditText.setBackgroundColor(Color.parseColor("#EEEEEE"));
@@ -197,7 +179,9 @@ public class MainActivity extends AppCompatActivity {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED ||
                     ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED ||
                     ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+                    (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                            ContextCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE_LOCATION) != PackageManager.PERMISSION_GRANTED)) {
 
                 Log.w(TAG, "📛 Permisos no otorgados, solicitando...");
                 ActivityCompat.requestPermissions(this,
@@ -205,7 +189,8 @@ public class MainActivity extends AppCompatActivity {
                                 Manifest.permission.READ_PHONE_STATE,
                                 Manifest.permission.READ_PHONE_NUMBERS,
                                 Manifest.permission.ACCESS_FINE_LOCATION,
-                                Manifest.permission.ACCESS_COARSE_LOCATION
+                                Manifest.permission.ACCESS_COARSE_LOCATION,
+                                Manifest.permission.FOREGROUND_SERVICE_LOCATION
                         },
                         1);
             } else {
